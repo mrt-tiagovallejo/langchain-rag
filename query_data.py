@@ -1,8 +1,7 @@
 import argparse
-# from dataclasses import dataclass
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
-from langchain_openai import ChatOpenAI
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.chat_models import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 
 CHROMA_PATH = "chroma"
@@ -25,22 +24,24 @@ def main():
     args = parser.parse_args()
     query_text = args.query_text
 
-    # Prepare the DB.
-    embedding_function = OpenAIEmbeddings()
+    # Prepare the DB using Ollama embeddings.
+    embedding_function = OllamaEmbeddings(model="nomic-embed-text")
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
     results = db.similarity_search_with_relevance_scores(query_text, k=3)
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        return
+    # if len(results) == 0 or results[0][1] < 0.7:
+    #     print("Unable to find matching results.")
+    #     return
 
+    # Format the prompt
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, question=query_text)
     print(prompt)
 
-    model = ChatOpenAI()
+    # Use an Ollama model for local inference
+    model = ChatOllama(model="llama3:8b")
     response_text = model.predict(prompt)
 
     sources = [doc.metadata.get("source", None) for doc, _score in results]
