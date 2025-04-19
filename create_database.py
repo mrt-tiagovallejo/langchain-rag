@@ -3,6 +3,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain.document_loaders.pdf import PyPDFDirectoryLoader
+from langchain_community.embeddings.bedrock import BedrockEmbeddings
 import os
 import shutil
 from dotenv import load_dotenv
@@ -12,19 +14,41 @@ load_dotenv()
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data/podcasts_transscript"
+PDF_DATA_PATH = "data/pdfs"
 
 def main():
-    generate_data_store()
+    # generate_data_store() - uncomment for md files
+    generate_data_store_for_pdfs()
+
+def generate_data_store_for_pdfs():
+    documents = load_pdf_documents()
+    chunks = split_documents(documents)
+    save_to_chroma(chunks)
 
 def generate_data_store():
     documents = load_documents()
     chunks = split_text(documents)
     save_to_chroma(chunks)
 
+def load_pdf_documents():
+    document_loader = PyPDFDirectoryLoader(PDF_DATA_PATH)
+    documents = document_loader.load()
+    return documents 
+
 def load_documents():
     loader = DirectoryLoader(DATA_PATH, glob="*.md")
     documents = loader.load()
     return documents
+
+def split_documents(documents: list[Document]):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=80,
+        length_function=len,
+        is_separator_regex=False,
+    )
+
+    return text_splitter.split_documents(documents)
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
