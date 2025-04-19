@@ -17,17 +17,18 @@ DATA_PATH = "data/podcasts_transscript"
 PDF_DATA_PATH = "data/pdfs"
 
 def main():
-    # generate_data_store() - uncomment for md files
-    generate_data_store_for_pdfs()
+    # use_pdf_documents=TRUE to process only pdf data path
+    # use_pdf_documents=FALSE to process only md data path
+    generate_data_store(use_pdf_documents=True)
 
-def generate_data_store_for_pdfs():
-    documents = load_pdf_documents()
-    chunks = split_documents(documents)
-    save_to_chroma(chunks)
+def generate_data_store(use_pdf_documents: bool):
+    if use_pdf_documents:
+        documents = load_pdf_documents()
+        chunks = split_documents(documents)
+    else:
+        documents = load_documents()
+        chunks = split_text(documents)
 
-def generate_data_store():
-    documents = load_documents()
-    chunks = split_text(documents)
     save_to_chroma(chunks)
 
 def load_pdf_documents():
